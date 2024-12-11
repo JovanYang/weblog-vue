@@ -29,6 +29,7 @@
                         :model="loginForm"
                         :rules="rules"
                         class="space-y-6"
+                        @keyup.enter="handleLogin"
                     >
                         <el-form-item prop="username">
                             <el-input 
@@ -67,7 +68,7 @@
                                 :loading="loading"
                                 @click="handleLogin"
                             >
-                                登录
+                                {{ loading ? '登录中...' : '登录' }}
                             </el-button>
                         </el-form-item>
                     </el-form>
@@ -82,7 +83,7 @@ import { ref, reactive } from 'vue'
 import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/admin/user'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { showSuccess, showError } from '@/composables/util'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -111,26 +112,26 @@ const loading = ref(false)
 
 // 登录处理
 const handleLogin = async () => {
-    // 表单验证
+    if (loading.value) return  // 防止重复提交
+    
     await formRef.value.validate(async (valid, fields) => {
         if (valid) {
             loading.value = true
             try {
                 const res = await login(loginForm.username, loginForm.password)
                 if (res.data && res.data.code === 200) {
-                    ElMessage.success('登录成功')
+                    showSuccess('登录成功')
                     router.push('/admin/index')
                 } else {
-                    ElMessage.error(res.data.message || '登录失败')
+                    showError(res.data.message || '登录失败')
                 }
             } catch (error) {
-                ElMessage.error('登录失败：' + (error.message || '未知错误'))
+                showError('登录失败：' + (error.message || '未知错误'))
             } finally {
                 loading.value = false
             }
         } else {
-            console.log('验证失败', fields)
-            ElMessage.error('请填写正确的登录信息')
+            showError('请填写正确的登录信息')
         }
     })
 }
