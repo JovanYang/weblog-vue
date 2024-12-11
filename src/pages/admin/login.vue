@@ -24,8 +24,13 @@
                     <p class="text-gray-400 text-center mb-10">请使用您的账号密码登录系统</p>
                     
                     <!-- 登录表单 -->
-                    <el-form class="space-y-6">
-                        <el-form-item>
+                    <el-form 
+                        ref="formRef"
+                        :model="loginForm"
+                        :rules="rules"
+                        class="space-y-6"
+                    >
+                        <el-form-item prop="username">
                             <el-input 
                                 v-model="loginForm.username"
                                 size="large" 
@@ -36,7 +41,7 @@
                             />
                         </el-form-item>
                         
-                        <el-form-item>
+                        <el-form-item prop="password">
                             <el-input 
                                 v-model="loginForm.password"
                                 size="large" 
@@ -76,6 +81,23 @@
 import { ref, reactive } from 'vue'
 import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/admin/user'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+
+const router = useRouter()
+const formRef = ref(null)
+
+// 表单验证规则
+const rules = {
+    username: [
+        { required: true, message: '请输入用户名', trigger: 'blur' },
+        { min: 3, max: 20, message: '用户名长度应在 5 到 20 个字符之间', trigger: 'blur' }
+    ],
+    password: [
+        { required: true, message: '请输入密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '密码长度应在 6 到 20 个字符之间', trigger: 'blur' }
+    ]
+}
 
 // 登录表单数据
 const loginForm = reactive({
@@ -89,17 +111,28 @@ const loading = ref(false)
 
 // 登录处理
 const handleLogin = async () => {
-    try {
-        // login 函数接收用户名和密码，发送请求到后端
-        const res = await login(loginForm.username, loginForm.password)
-        if (res.data.code === 200) {
-            // 登录成功处理
-            console.log('登录成功')
+    // 表单验证
+    await formRef.value.validate(async (valid, fields) => {
+        if (valid) {
+            loading.value = true
+            try {
+                const res = await login(loginForm.username, loginForm.password)
+                if (res.data && res.data.code === 200) {
+                    ElMessage.success('登录成功')
+                    router.push('/admin/index')
+                } else {
+                    ElMessage.error(res.data.message || '登录失败')
+                }
+            } catch (error) {
+                ElMessage.error('登录失败：' + (error.message || '未知错误'))
+            } finally {
+                loading.value = false
+            }
+        } else {
+            console.log('验证失败', fields)
+            ElMessage.error('请填写正确的登录信息')
         }
-    } catch (error) {
-        // 登录失败处理
-        console.error('登录失败')
-    }
+    })
 }
 </script>
 
