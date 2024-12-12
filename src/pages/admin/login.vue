@@ -84,6 +84,7 @@ import { User, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/admin/user'
 import { useRouter } from 'vue-router'
 import { showSuccess, showError } from '@/composables/util'
+import { setToken } from '@/composables/auth'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -121,6 +122,10 @@ const handleLogin = async () => {
                 const res = await login(loginForm.username, loginForm.password)
                 if (res.data && res.data.code === 200) {
                     showSuccess('登录成功')
+                    // 存储 Token 到 Cookie 中
+                    let token = res.data.token
+                    setToken(token)
+                    
                     router.push('/admin/index')
                 } else {
                     showError(res.data.message || '登录失败')
